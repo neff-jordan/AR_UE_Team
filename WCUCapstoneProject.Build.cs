@@ -20,15 +20,24 @@ public class WCUCapstoneProject : ModuleRules
             PublicIncludePaths.Add(OpenCVIncludePath2);
             PublicIncludePaths.Add("/Users/jordanneff/opencv_build");
             PublicIncludePaths.Add("/Users/jordanneff/opencv_build/opencv2");
+            PublicIncludePaths.Add("/Users/jordanneff/opencv_build/lib");
+            PublicIncludePaths.Add("/Users/jordanneff/opencv/modules/dnn/include"); // tried /opencv2/dnn
+            PublicIncludePaths.Add("/Users/jordanneff/opencv/modules/imgcodecs/include"); // /opencv2/imgcodecs
 
-
+            // /Users/jordanneff/opencv/modules
+            // /Users/jordanneff/opencv/modules/imgcodecs/include/opencv2/imgcodecs
+            
+            
             string[] OpenCVLibs = new string[]
             {
                 "libopencv_core.dylib",
                 "libopencv_imgproc.dylib",
                 "libopencv_highgui.dylib",
                 "libopencv_imgcodecs.dylib",
-                "libopencv_videoio.dylib"
+                "libopencv_videoio.dylib",
+                "libopencv_dnn.dylib",
+                "libopencv_dnn.4.7.0.dylib",
+                "libopencv_dnn.407.dylib"
             };
 
             foreach (string lib in OpenCVLibs)
