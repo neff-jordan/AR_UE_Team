@@ -46,6 +46,12 @@ int UMainOpenCV::Start() // ATTACH blueprint photo path
     TArray<FString> imageNames;
     imageNames.Add(FPaths::ProjectSavedDir() / TEXT("bus.jpg"));
     imageNames.Add(FPaths::ProjectSavedDir() / TEXT("zidane.jpg"));
+    
+    imageNames.Add(FPaths::ProjectSavedDir() / TEXT("bike.jpg"));
+    imageNames.Add(FPaths::ProjectSavedDir() / TEXT("laptop.jpg"));
+    imageNames.Add(FPaths::ProjectSavedDir() / TEXT("sport_ball.jpg"));
+    imageNames.Add(FPaths::ProjectSavedDir() / TEXT("bench.jpg"));
+
 
     for (int i = 0; i < imageNames.Num(); ++i)
     {
@@ -62,8 +68,23 @@ int UMainOpenCV::Start() // ATTACH blueprint photo path
         TArray<FDetection> output = inf->runInference(frame);
 
         int detections = output.Num();
-        // write output logs here to verify object
-        
+        UE_LOG(LogTemp, Warning, TEXT("Number of detections: %d"), detections);
+
+        for (int i = 0; i < detections; ++i)
+        {
+            FDetection detection = output[i];
+
+            FString classNameString = detection.className;
+            FString confidenceString = FString::Printf(TEXT("%.4f"), detection.confidence);
+            
+            // Log the output to verify values
+            UE_LOG(LogTemp, Warning, TEXT("Detection %d: Class: %s, Confidence: %s"),
+                       i, *classNameString, *confidenceString);
+
+            
+        }
+
+
         
         
         
