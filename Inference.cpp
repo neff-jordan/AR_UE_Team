@@ -13,14 +13,15 @@ void UInference::Init(const FString &onnxModelPath, const cv::Size2f &modelInput
     classesPath = classesTxtFile;
     cudaEnabled = runWithCuda;
 
-    loadClassesFromFile();
     loadOnnxNetwork();
+    loadClassesFromFile();
 }
 
 TArray<FDetection> UInference::runInference(const cv::Mat &input)
 {
     UE_LOG(LogTemp, Warning, TEXT("Running inference"));
     cv::Mat modelInput = input;
+    
     if (letterBoxForSquare && modelShape.width == modelShape.height)
     {
         modelInput = formatToSquare(modelInput);
@@ -48,15 +49,15 @@ TArray<FDetection> UInference::runInference(const cv::Mat &input)
     int rows = outputs[0].size[1];
     int dimensions = outputs[0].size[2];
 
-    bool yolov8 = false;
-    if (dimensions > rows)
-    {
-        yolov8 = true;
+    bool yolov8 = true;
+    //if (dimensions > rows)
+    //{
+        //yolov8 = true;
         rows = outputs[0].size[2];
         dimensions = outputs[0].size[1];
         outputs[0] = outputs[0].reshape(1, dimensions);
         cv::transpose(outputs[0], outputs[0]);
-    }
+    //}
 
     float *data = (float *)outputs[0].data;
     if (!data)
@@ -74,19 +75,19 @@ TArray<FDetection> UInference::runInference(const cv::Mat &input)
 
     for (int i = 0; i < rows; ++i)
     {
-        float confidence = yolov8 ? *(data + 4) : data[4];
-        if (confidence >= modelScoreThreshold)
-        {
-            float *classes_scores = yolov8 ? data + 4 : data + 5;
+            float *classes_scores = data + 4;
+        
             cv::Mat scores(1, classes.Num(), CV_32FC1, classes_scores);
             cv::Point class_id;
             double maxClassScore;
+        
             minMaxLoc(scores, 0, &maxClassScore, 0, &class_id);
 
             if (maxClassScore > modelScoreThreshold)
             {
-                confidences.push_back(confidence);
+                confidences.push_back(maxClassScore);
                 class_ids.push_back(class_id.x);
+                                
                 float x = data[0];
                 float y = data[1];
                 float w = data[2];
@@ -99,7 +100,7 @@ TArray<FDetection> UInference::runInference(const cv::Mat &input)
 
                 boxes.push_back(cv::Rect(left, top, width, height));
             }
-        }
+        
         data += dimensions;
     }
 
@@ -107,13 +108,18 @@ TArray<FDetection> UInference::runInference(const cv::Mat &input)
     std::vector<int> nms_result;
     cv::dnn::NMSBoxes(boxes, confidences, modelScoreThreshold, modelNMSThreshold, nms_result);
 
+    
+    //UE_LOG(LogTemp, Warning, TEXT("nms size: %d"), nms_result);
+
+    
     TArray<FDetection> detections;
-    for (int idx : nms_result)
+    for (int idx : nms_result) // should be nms.size() but its not it
     {
         FDetection result;
+        
         result.class_id = class_ids[idx];
         result.confidence = confidences[idx];
-        result.color = FLinearColor(FMath::FRand(), FMath::FRand(), FMath::FRand(), 1.0f);
+        result.color = FLinearColor(FMath::FRand(), FMath::FRand(), FMath::FRand(), 1.0f); // used to be scalar
         result.className = classes[result.class_id];
         result.box = boxes[idx];
         detections.Add(result);
@@ -128,7 +134,11 @@ void UInference::loadClassesFromFile()
     TArray<FString> FileLines;
     if (FFileHelper::LoadFileToStringArray(FileLines, *classesPath))
     {
-        classes.Append(FileLines);
+        for (const FString& Line : FileLines) // Use const reference to avoid unnecessary copies
+        {
+            classes.Add(Line);
+            UE_LOG(LogTemp, Warning, TEXT("Loaded class: %s"), *Line);
+        }
         UE_LOG(LogTemp, Warning, TEXT("Loaded %d classes"), classes.Num());
     }
     else
